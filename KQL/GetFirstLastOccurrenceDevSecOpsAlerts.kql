@@ -1,5 +1,5 @@
 //-------------------------------------------------------------------------
-// This KQL query allows to list the new alerts related to DevSecOps in a specified past timeframe from now
+// This KQL query allows to list the alerts related to DevSecOps in a specified past timeframe from now, with their first and last occurrence
 // 
 // Prerequisites:
 // * DevOps Security enabled in Defender for Cloud (https://learn.microsoft.com/en-us/azure/defender-for-cloud/devops-support)
@@ -11,9 +11,10 @@
 // 
 // Last updated May. 1st, 2024 by Stefano Pescosolido (https://www.linkedin.com/in/stefanopescosolido/)
 //-------------------------------------------------------------------------
-let timeInt = 3h;
+let timeInt = 5d;
 let res = (
 SecurityNestedRecommendation
+| where SubAssessmentTimeGeneration >= ago(timeInt)
 | extend AssessedResourceType = tostring(parse_json(AdditionalData).Data.AssessedResourceType)
 | where AssessedResourceType =~ "adoRepo" or AssessedResourceType =~ "GitHubRepo"
 | extend CodeQLRuleName = iif(Category=='Dependency','',iif(AssessedResourceType=="GitHubRepo",tostring(parse_json(AdditionalData).Data.Rule_name),tostring(parse_json(AdditionalData).Data.RuleId)))
@@ -33,7 +34,5 @@ SecurityNestedRecommendation
 | extend DepSecurityVulnVerRange = iif(AssessedResourceType=="GitHubRepo",tostring(parse_json(AdditionalData).Data.securityVulnerability__vulnerableVersionRange),iif(Category=='Dependency','?',''))
 | project TimeGenerated, SubAssessmentTimeGeneration, AssessedResourceType, RepositoryUri, Category, RecommendationSeverity, RecommendationState, RecommendationName, AssessedResourceId, Description, CodeQLRuleName, CodeQLRuleDescription, CodeQLRuleSeverity, CodeQLFile, CodeQLLine, IaCFile, State, Tool_name, DepSecurityAdvisoryCVE, DepSecurityAdvisoryCVSS, DepSecurityAdvisoryLink, DepSecurityVulnPkgType, DepSecurityVulnPkgName, DepSecurityVulnVerRange
  );
-let lastRes = res | where SubAssessmentTimeGeneration >= ago(timeInt);
-let prevRes = res | where SubAssessmentTimeGeneration < ago(timeInt);
-lastRes 
-| join kind=anti prevRes on AssessedResourceType, RepositoryUri, Category, RecommendationSeverity, RecommendationState, RecommendationName, AssessedResourceId, Description, CodeQLRuleName, CodeQLRuleDescription, CodeQLRuleSeverity, CodeQLFile, CodeQLLine, IaCFile, State, Tool_name, DepSecurityAdvisoryCVE, DepSecurityAdvisoryCVSS, DepSecurityAdvisoryLink, DepSecurityVulnPkgType, DepSecurityVulnPkgName, DepSecurityVulnVerRange
+res
+| summarize FirstOccurrence = min(SubAssessmentTimeGeneration), LastOccurrence = max(SubAssessmentTimeGeneration), NumberOfOccurrences=count() by AssessedResourceType, RepositoryUri, Category, RecommendationSeverity, RecommendationState, RecommendationName, AssessedResourceId, Description, CodeQLRuleName, CodeQLRuleDescription, CodeQLRuleSeverity, CodeQLFile, CodeQLLine, IaCFile, State, Tool_name, DepSecurityAdvisoryCVE, DepSecurityAdvisoryCVSS, DepSecurityAdvisoryLink, DepSecurityVulnPkgType, DepSecurityVulnPkgName, DepSecurityVulnVerRange
