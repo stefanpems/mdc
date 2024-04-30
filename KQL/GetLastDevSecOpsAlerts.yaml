@@ -17,9 +17,35 @@ SkillGroups:
           While DevOps Security in Defender for Cloud supports also the code scanning results in devops environments based on GitLab Enterprise, this KQL
           query at this time does not support retriving results coming from that specific source. 
         Inputs:
-          - Name: timespan
+          - Name: TimespanBack
             Description: Provide the time interval in the past, starting now, within which new alarms should be searched for. (e.g. 1d for 1 day, 4h for 4 hours) 
             Required: true
         Settings:
           Target: LogAnalytics
-          TemplateUrl: https://raw.githubusercontent.com/stefanpems/mdc/main/KQL/GetLastDevSecOpsAlerts.kql
+          Template: |-
+            let timeInt = {{TimespanBack}};
+            let res = (
+            SecurityNestedRecommendation
+            | where ResourceGroup == "rg-MDC-DevOps"
+            | extend AssessedResourceType = tostring(parse_json(AdditionalData).Data.AssessedResourceType)
+            | extend CodeQLRuleName = iif(Category=='Dependency','',iif(AssessedResourceType=="GitHubRepo",tostring(parse_json(AdditionalData).Data.Rule_name),tostring(parse_json(AdditionalData).Data.RuleId)))
+            | extend CodeQLRuleDescription = iif(AssessedResourceType=="GitHubRepo",tostring(parse_json(AdditionalData).Data.Rule_description),tostring(parse_json(AdditionalData).Data.RuleDescription))
+            | extend CodeQLRuleSeverity = iif(AssessedResourceType=="GitHubRepo",tostring(parse_json(AdditionalData).Data.Rule_severity),tostring(parse_json(AdditionalData).Data.Severity))
+            | extend State = tostring(parse_json(AdditionalData).Data.State)
+            | extend CodeQLFile = iif(AssessedResourceType=="GitHubRepo",tostring(parse_json(AdditionalData).Data.Path),tostring(parse_json(AdditionalData).Data.File))
+            | extend CodeQLLine = iif(AssessedResourceType=="GitHubRepo",tostring(parse_json(AdditionalData).Data.Line),tostring(parse_json(AdditionalData).Data.Line))
+            | extend IaCFile = iif(AssessedResourceType=="GitHubRepo",tostring(parse_json(AdditionalData).Data.Path),tostring(parse_json(AdditionalData).Data.Path))
+            | extend Tool_name = iif(AssessedResourceType=="GitHubRepo",tostring(parse_json(AdditionalData).Data.Tool_name),tostring(parse_json(AdditionalData).Data.ToolName))
+            | extend RepositoryUri = iif(AssessedResourceType=="GitHubRepo",tostring(parse_json(AdditionalData).Data.RepositoryUri),iif(tostring(parse_json(AdditionalData).Data.RepositoryUri)!="",tostring(parse_json(AdditionalData).Data.RepositoryUri),tostring(parse_json(AdditionalData).Data.ProjectUri)))
+            | extend DepSecurityAdvisoryCVE = iif(AssessedResourceType=="GitHubRepo",tostring(parse_json(AdditionalData).Data.SecurityAdvisoryCVE),iif(Category=='Dependency','?',''))
+            | extend DepSecurityAdvisoryCVSS = iif(AssessedResourceType=="GitHubRepo",tostring(parse_json(AdditionalData).Data.securityAdvisory__cvss__score),iif(Category=='Dependency','?',''))
+            | extend DepSecurityAdvisoryLink = iif(AssessedResourceType=="GitHubRepo",tostring(parse_json(AdditionalData).Data.securityAdvisory__permalink),iif(Category=='Dependency','?',''))
+            | extend DepSecurityVulnPkgType = iif(AssessedResourceType=="GitHubRepo",tostring(parse_json(AdditionalData).Data.securityVulnerability__package__ecosystem),iif(Category=='Dependency','?',''))
+            | extend DepSecurityVulnPkgName = iif(AssessedResourceType=="GitHubRepo",tostring(parse_json(AdditionalData).Data.securityVulnerability__package__name),iif(Category=='Dependency','?',''))
+            | extend DepSecurityVulnVerRange = iif(AssessedResourceType=="GitHubRepo",tostring(parse_json(AdditionalData).Data.securityVulnerability__vulnerableVersionRange),iif(Category=='Dependency','?',''))
+            | project TimeGenerated, SubAssessmentTimeGeneration, AssessedResourceType, RepositoryUri, Category, RecommendationSeverity, RecommendationState, RecommendationName, AssessedResourceId, Description, CodeQLRuleName, CodeQLRuleDescription, CodeQLRuleSeverity, CodeQLFile, CodeQLLine, IaCFile, State, Tool_name, DepSecurityAdvisoryCVE, DepSecurityAdvisoryCVSS, DepSecurityAdvisoryLink, DepSecurityVulnPkgType, DepSecurityVulnPkgName, DepSecurityVulnVerRange
+            );
+            let lastRes = res | where SubAssessmentTimeGeneration >= ago(timeInt);
+            let prevRes = res | where SubAssessmentTimeGeneration < ago(timeInt);
+            lastRes 
+            | join kind=anti prevRes on AssessedResourceType, RepositoryUri, Category, RecommendationSeverity, RecommendationState, RecommendationName, AssessedResourceId, Description, CodeQLRuleName, CodeQLRuleDescription, CodeQLRuleSeverity, CodeQLFile, CodeQLLine, IaCFile, State, Tool_name, DepSecurityAdvisoryCVE, DepSecurityAdvisoryCVSS, DepSecurityAdvisoryLink, DepSecurityVulnPkgType, DepSecurityVulnPkgName, DepSecurityVulnVerRange
