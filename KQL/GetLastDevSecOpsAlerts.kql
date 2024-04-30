@@ -1,12 +1,9 @@
 //-------------------------------------------------------------------------
-// This KQL query allows to extract the "last" alerts related to DevSecOps
+// This KQL query allows to extract the "last" alert related to DevSecOps
 // 
 // Prerequisites:
 // * DevOps Security enabled in Defender for Cloud (https://learn.microsoft.com/en-us/azure/defender-for-cloud/devops-support)
 // * Continuous Export enabled in Defender for Cloud (https://learn.microsoft.com/en-us/azure/defender-for-cloud/continuous-export)
-//
-// Variable: 
-// * timeInt: provide the time interval in the past, starting now, within which new alarms should be searched for. (e.g. 1d for 1 day, 4h for 4 hours) 
 //
 // Notes: 
 // * The KQL below parses only data coming from GitHub or Azure DevOps. Support for parsing GitLab data must still be added.
@@ -14,11 +11,11 @@
 // 
 // Last updated Apr. 30, 2024 by Stefano Pescosolido (https://www.linkedin.com/in/stefanopescosolido/)
 //-------------------------------------------------------------------------
-let timeInt = 1d;
+let timeInt = 3h;
 let res = (
 SecurityNestedRecommendation
-| where ResourceGroup == "rg-MDC-DevOps"
 | extend AssessedResourceType = tostring(parse_json(AdditionalData).Data.AssessedResourceType)
+| where AssessedResourceType =~ "adoRepo" or AssessedResourceType =~ "GitHubRepo"
 | extend CodeQLRuleName = iif(Category=='Dependency','',iif(AssessedResourceType=="GitHubRepo",tostring(parse_json(AdditionalData).Data.Rule_name),tostring(parse_json(AdditionalData).Data.RuleId)))
 | extend CodeQLRuleDescription = iif(AssessedResourceType=="GitHubRepo",tostring(parse_json(AdditionalData).Data.Rule_description),tostring(parse_json(AdditionalData).Data.RuleDescription))
 | extend CodeQLRuleSeverity = iif(AssessedResourceType=="GitHubRepo",tostring(parse_json(AdditionalData).Data.Rule_severity),tostring(parse_json(AdditionalData).Data.Severity))

@@ -22,12 +22,16 @@ SkillGroups:
             Required: true
         Settings:
           Target: LogAnalytics
+          TenantId: a78b08e7-0621-4df5-8d30-ed2ac65a1d46
+          SubscriptionId: 360cf1d1-629e-40f8-a227-2b91113d300a
+          ResourceGroupName: rg-ala
+          WorkspaceName: no-sentinel      
           Template: |-
-            let timeInt = {{TimespanBack}};
+            let timeInt = 3h;
             let res = (
             SecurityNestedRecommendation
-            | where ResourceGroup == "rg-MDC-DevOps"
             | extend AssessedResourceType = tostring(parse_json(AdditionalData).Data.AssessedResourceType)
+            | where AssessedResourceType =~ "adoRepo" or AssessedResourceType =~ "GitHubRepo"
             | extend CodeQLRuleName = iif(Category=='Dependency','',iif(AssessedResourceType=="GitHubRepo",tostring(parse_json(AdditionalData).Data.Rule_name),tostring(parse_json(AdditionalData).Data.RuleId)))
             | extend CodeQLRuleDescription = iif(AssessedResourceType=="GitHubRepo",tostring(parse_json(AdditionalData).Data.Rule_description),tostring(parse_json(AdditionalData).Data.RuleDescription))
             | extend CodeQLRuleSeverity = iif(AssessedResourceType=="GitHubRepo",tostring(parse_json(AdditionalData).Data.Rule_severity),tostring(parse_json(AdditionalData).Data.Severity))
