@@ -1,0 +1,25 @@
+Descriptor:
+  Name: DevSecOps
+  DisplayName: DevSecOps by Defender for Cloud
+  Description:  KQL queries for retrieving the results of the Code Scanning (CodeQL), Dependency Scanning (Dependabot), Secret Scanning  
+    and Infrastructure as Code (IaC) scanning made by GitHub Advanced Security (GhAS) in GitHub and by GitHub Advanced Security for Azure DevOps (GAzDO)
+    in Azure DevOps, as collected by the Defender Cloud Security Posture Management (CSPM) component of Microsoft Defender for Cloud (MDC).
+    These KQL queries allow to track the changes of these results over time. For example, it is possible to extract only the evidences (alerts) that
+    were added in the last X days. 
+SkillGroups:
+  - Format: KQL
+    Skills:
+      - Name: GetNewDevSecOpsAlertsInTheLastTimespan
+        DisplayName: Get the new alerts for DevSecOps in the last timespan  
+        Description: Get the the DevSecOps results that were added in the last X days in the recommendations in Defender for Cloud related to DevOps Security.
+          These results are the alerts produced by the Code Scanning (CodeQL), Dependency Scanning (Dependabot), Secret Scanning and Infrastructure as Code (IaC)
+          scanning made by GitHub Advanced Security (GhAS) in GitHub and by GitHub Advanced Security for Azure DevOps (GAzDO) in Azure DevOps.
+          While DevOps Security in Defender for Cloud supports also the code scanning results in devops environments based on GitLab Enterprise, this KQL
+          query at this time does not support retriving results coming from that specific source. 
+        Inputs:
+          - Name: timespan
+            Description: Provide the time interval in the past, starting now, within which new alarms should be searched for. (e.g. 1d for 1 day, 4h for 4 hours) 
+            Required: true
+        Settings:
+          Target: LogAnalytics
+          TemplateUrl: https://raw.githubusercontent.com/stefanpems/mdc/main/KQL/GetLastDevSecOpsAlerts.kql

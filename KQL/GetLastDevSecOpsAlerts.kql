@@ -1,9 +1,12 @@
 //-------------------------------------------------------------------------
-// This KQL query allows to extract the "last" alert related to DevSecOps
+// This KQL query allows to extract the "last" alerts related to DevSecOps
 // 
 // Prerequisites:
 // * DevOps Security enabled in Defender for Cloud (https://learn.microsoft.com/en-us/azure/defender-for-cloud/devops-support)
 // * Continuous Export enabled in Defender for Cloud (https://learn.microsoft.com/en-us/azure/defender-for-cloud/continuous-export)
+//
+// Variable: 
+// * timeInt: provide the time interval in the past, starting now, within which new alarms should be searched for. (e.g. 1d for 1 day, 4h for 4 hours) 
 //
 // Notes: 
 // * The KQL below parses only data coming from GitHub or Azure DevOps. Support for parsing GitLab data must still be added.
