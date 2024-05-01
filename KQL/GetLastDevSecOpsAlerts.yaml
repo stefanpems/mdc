@@ -45,10 +45,10 @@ SkillGroups:
             Required: true
         Settings:
           Target: LogAnalytics
-          TenantId: a78b08e7-0621-4df5-8d30-ed2ac65a1d46
-          SubscriptionId: 360cf1d1-629e-40f8-a227-2b91113d300a
-          ResourceGroupName: rg-ala
-          WorkspaceName: no-sentinel      
+          TenantId: [Write your Tenant Id]
+          SubscriptionId: [Write your Subscription Id]
+          ResourceGroupName: [Write the name of your resource group]
+          WorkspaceName: [Write the name of your Log Analytics or Sentinel workspace]      
           Template: |-
             let timeInt = {{TimespanBack}};
             let res = (
