@@ -20,7 +20,7 @@ SkillGroups:
             number of occurrences (Occurrences),
             risk factors (RiskFactors),
             potential impact (PotentialImpact),
-            Mitre tactiques and technics (Mitre) and
+            Mitre tactics and techniques (Mitre) and
             remediation steps (AdditionalRemediationSteps).
         Inputs:
           - Name: DaysBack
