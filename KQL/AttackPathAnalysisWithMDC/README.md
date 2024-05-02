@@ -10,7 +10,12 @@ The skill in this custom pluging allows to retrieve the list of "Attack Paths" i
 
 ### Instructions: 
 1. Download the YAML file in this folder. Save it locally in your PC and open in for editing its content
-2. Add the plugin by uploading the YAML in Copilot for Security (https://learn.microsoft.com/en-us/copilot/security/manage-plugins?tabs=securitycopilotplugin)
+2. Set the values for these parameters: 
+    * TenantId: [Write your Tenant Id]
+    * SubscriptionId: [Write your Subscription Id]
+    * ResourceGroupName: [Write the name of your resource group]
+    * WorkspaceName: [Write the name of your Log Analytics or Sentinel workspace] 
+3. Add the plugin by uploading the YAML in Copilot for Security (https://learn.microsoft.com/en-us/copilot/security/manage-plugins?tabs=securitycopilotplugin)
 
 
 ### Additional references: 
