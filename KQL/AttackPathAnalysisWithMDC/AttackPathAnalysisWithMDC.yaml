@@ -199,9 +199,9 @@ SkillGroups:
 
 
       - Name: GetRecommendationsByAttackPathIDs
-        DisplayName: Get the Recommendations releated to the Attack Paths selected by the Attack Path IDs specified in input.  
-        Description: Get info about the Recommendations, in Defender for Cloud, releated to the Attack Paths selected by the Attack Path IDs specified in input.  
-        DescriptionForModel: Get info about the Recommendations, in Defender for Cloud, releated to the Attack Paths selected by the Attack Path IDs specified in input.   
+        DisplayName: Get the Recommendations related to the Attack Paths selected by the Attack Path IDs specified in input.  
+        Description: Get info about the Recommendations, in Defender for Cloud, related to the Attack Paths selected by the Attack Path IDs specified in input.  
+        DescriptionForModel: Get info about the Recommendations, in Defender for Cloud, related to the Attack Paths selected by the Attack Path IDs specified in input.   
             The Recommendations are all and only those generated within a specified time window, identified by an "end date" and a "number of 
             days" before that date. End date and number of days are also specified by the user as input. If not specified, it is assumed that 
             the search must be done considering the "end date" as today and the "number of days" as 1.
@@ -300,10 +300,10 @@ SkillGroups:
 
 
       - Name: GetRecommendationsByNodeNames
-        DisplayName: Get the Recommendations releated to the Attack Paths including any of the cloud resources specified in input. 
-        Description: Get info about the Recommendations, in Defender for Cloud, releated to the Attack Paths including any of the cloud resources 
+        DisplayName: Get the Recommendations related to the Attack Paths including any of the cloud resources specified in input. 
+        Description: Get info about the Recommendations, in Defender for Cloud, related to the Attack Paths including any of the cloud resources 
             (aka "nodes") specified in input as a comma-separated list of names.  
-        DescriptionForModel: Get info about the Recommendations, in Defender for Cloud, releated to the Attack Paths including any of the cloud resources 
+        DescriptionForModel: Get info about the Recommendations, in Defender for Cloud, related to the Attack Paths including any of the cloud resources 
             (aka "nodes") specified in input as a comma-separated list of names. 
             The Recommendations are all and only those generated within a specified time window, identified by an "end date" and a "number of 
             days" before that date. End date and number of days are also specified by the user as input. If not specified, it is assumed that 
