@@ -391,3 +391,99 @@ SkillGroups:
             | project-away RecommendationSevNum
             );
             ap
+
+
+
+
+
+
+
+      - Name: GetRecommendationsInAttackPaths
+        DisplayName: Get the Recommendations belonging to Attack Paths and with a specified minimal severity. 
+        Description: Get the Recommendations, in Defender for Cloud, belonging to Attack Paths and with a specified minimal severity.  
+        DescriptionForModel: Get info about the top Recommendations, in Defender for Cloud, related to the Attack Paths. 
+            The Recommendations are all and only those generated within a specified time window, identified by an "end date" and a "number of 
+            days" before that date. End date and number of days are also specified by the user as input. If not specified, it is assumed that 
+            the search must be done considering the "end date" as today and the "number of days" as 1.
+            For each Recommendation the call returns the link to the page, in the Azure portal, describing in full details the Recommendation itself.
+            It also returns the source (cloud environment hosting the resource related to this recommendation) and the name and the type of the cloud resource 
+            that is targeted by the recommendation. 
+            The list of recommendations is filtered by the minimal severity specified in input.
+
+        Inputs:
+          - Name: RecommendationMinimalSeverity
+            Description: Provide the Severity for the Recommendations to be listed - Critical = 0, High = 1, Medium = 2, Low = 3 (e.g. write 1 for Critical and Medium). Default is 1.
+            Required: false
+          - Name: EndDate
+            Description: Provide the end date (e.g. 2024-05-17T00:00:00Z). Default is today
+            Required: false
+          - Name: DaysBack
+            Description: Provide the number of days to be considered in the past, starting from the end date (e.g. 2 for 2 days). Default is 1. 
+            Required: false  
+        Settings:
+          Target: LogAnalytics
+          TenantId: [Write your Tenant Id]
+          SubscriptionId: [Write your Subscription Id]
+          ResourceGroupName: [Write the name of your resource group]
+          WorkspaceName: [Write the name of your Log Analytics or Sentinel workspace]   
+          Template: |-
+            let inputEndDate = "{{EndDate}}"; //Example-> "2024-05-17T00:00:00Z";
+            let inputDaysBack = "{{DaysBack}}"; //Example-> "7";
+            let inputRecommendationMinimalSeverity = "{{RecommendationMinimalSeverity}}"; //Example-> "2";
+            let yesterday = startofday(ago(1d));           
+            let dateEnd = startofday( todatetime(iif( isempty(inputEndDate), tostring(now()), tostring(inputEndDate) )));
+            let isInt = not(isnull(isnan(toreal(inputDaysBack))));
+            let pastDays = toint(   
+                iif(isInt and (inputDaysBack!=0),toint(inputDaysBack),1)
+            );
+            let dateStart = datetime_add('day',-pastDays,dateEnd);
+            let isSevInt = not(isnull(isnan(toreal(inputRecommendationMinimalSeverity))));
+            let minSev = toint(   
+                iif(isSevInt and (inputRecommendationMinimalSeverity!=0),toint(inputRecommendationMinimalSeverity),3)
+            );
+            let ap =
+            (SecurityAttackPathData
+            | where TimeGenerated >= dateStart and TimeGenerated < dateEnd
+            | extend AttackPathSimpleId = substring(AttackPathId, strlen(AttackPathId) - 64)
+            | extend RiskFactors = tostring(RiskFactors)
+            | extend PathObject = parse_json(Path)
+            | mvexpand PathObjectNode = PathObject.nodes
+            | extend NodeDisplayName = tostring(PathObjectNode.displayName)
+            | extend NodeCloudProvider = tostring(PathObjectNode.cloudProvider)
+            | extend NodeLabel = tostring(PathObjectNode.label)
+            | extend Assessments = tostring(Assessments)
+            | extend PathObject = parse_json(PathObject)
+            | mvexpand PathObjectNode = PathObject.nodes
+            | extend EntryNodeDisplayName = iif(PathObjectNode.mapIdentifier == EntrypointId,tostring(PathObjectNode.displayName),"")
+            | extend EntryNodeCloudProvider = iif(PathObjectNode.mapIdentifier == EntrypointId,tostring(PathObjectNode.cloudProvider),"")
+            | extend EntryNodeLabel = iif(PathObjectNode.mapIdentifier == EntrypointId,tostring(PathObjectNode.label),"")
+            | extend EntryNodeDisplayNameAndLabel = strcat(EntryNodeDisplayName," (",EntryNodeCloudProvider,"-",EntryNodeLabel,")")
+            | extend TargetNodeDisplayName = iif(PathObjectNode.mapIdentifier == TargetId,tostring(PathObjectNode.displayName),"")
+            | extend TargetNodeCloudProvider = iif(PathObjectNode.mapIdentifier == TargetId,tostring(PathObjectNode.cloudProvider),"")
+            | extend TargetNodeLabel = iif(PathObjectNode.mapIdentifier == TargetId,tostring(PathObjectNode.label),"")
+            | extend TargetNodeDisplayNameAndLabel = strcat(TargetNodeDisplayName," (",TargetNodeCloudProvider,"-",TargetNodeLabel,")")
+            | mvexpand AssessmentPath = parse_json(Assessments)
+            | extend AssessmentPath_start_index = indexof(AssessmentPath, "/assessments/") + strlen("/assessments/")
+            | extend AssessmentPath_end_index = strlen(AssessmentPath)
+            | extend AssessmentPath_substring = substring(AssessmentPath, AssessmentPath_start_index, AssessmentPath_end_index - AssessmentPath_start_index)
+            | extend AssessmentPath_split_string = split(AssessmentPath_substring, '/')
+            | extend AssessmentId = tostring(AssessmentPath_split_string[0])
+            | extend parts = split(AssessmentPath, "/")
+            | extend AssessedResourceId = tostring(split(AssessmentPath,"/providers/Microsoft.Security/assessments/")[0])
+            | extend AssessedResourceName = tostring(split(AssessedResourceId,"/")[array_length(split(AssessedResourceId,"/"))-1])
+            | join kind=leftouter SecurityRecommendation on $left.AssessmentId == $right.RecommendationId and $left.AssessedResourceId == $right.AssessedResourceId
+            | where RecommendationDisplayName != "" and RecommendationState == "Unhealthy"
+            | extend ResourceSource = tostring(parse_json(Properties).resourceDetails.source)
+            | extend ResourceName = tostring(parse_json(Properties).resourceDetails.resourceName)
+            | extend ResourceType = tostring(parse_json(Properties).resourceDetails.resourceType)
+            | extend ResourceType = iif(ResourceType == ".containerimage", "containerImage", ResourceType)
+            | extend RecommendationSevNum = case( RiskLevel == "Critical", 0, RiskLevel == "High", 1, RiskLevel == "Medium", 2, RiskLevel == "Low", 3, 10)
+            | extend RecommendationLink = iif(RecommendationLink!="", strcat("https://",RecommendationLink),"")
+            | distinct  RecommendationSevNum, RecommendationDisplayName, RecommendationLink, ResourceSource, ResourceName, ResourceType
+            | order by RecommendationSevNum, RecommendationDisplayName
+            | where RecommendationSevNum <= minSev
+            | project-away RecommendationSevNum
+            );
+            ap
+    
+    
